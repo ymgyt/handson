@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  reverseproxy:
+    build:
+      context: .
+      dockerfile: Dockerfile_nginx
+    image: my-nginx
+    ports:
+      - 3080:80
+    depends_on:
+      - app
+    restart: always
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile_app
+    image: go-app
+    restart: always
+

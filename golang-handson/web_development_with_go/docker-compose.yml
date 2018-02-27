@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  postgres:
+    build:
+      context: files/docker
+      dockerfile: Dockerfile_postgres
+    image: "gowebdev-postgres-2"
+    ports:
+      - 5432:5432
+    environment:
+      - HOGE="HOGE"
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gowebdev
+    ports:
+      - 3000:3000
+    depends_on:
+      - postgres
+    restart: always

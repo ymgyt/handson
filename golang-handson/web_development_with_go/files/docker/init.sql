@@ -1,0 +1,2 @@
+CREATE DATABASE goweb_dev;
+GRANT ALL PRIVILEGES ON DATABASE goweb_dev TO postgres;

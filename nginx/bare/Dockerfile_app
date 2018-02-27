@@ -1,0 +1,7 @@
+FROM golang:latest
+RUN go get -u github.com/k0kubun/pp
+RUN mkdir /app
+ADD ./app/ /app/
+WORKDIR /app
+RUN go build -o main .
+CMD ["/app/main"]
