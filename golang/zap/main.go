@@ -56,8 +56,9 @@ func GetLogger(options ...LoggerOption) (*zap.Logger, error) {
 		}
 	}
 
-	zapOption := zap.AddStacktrace(zapcore.ErrorLevel)
-	logger, err := cfg.Build(zapOption)
+	logger, err := cfg.Build(
+		zap.AddStacktrace(zapcore.ErrorLevel),
+		zap.AddCaller())
 	if err != nil {
 		return nil, err
 	}
