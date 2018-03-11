@@ -1,0 +1,9 @@
+DEPENDENCIES
+  apache2
+  mysql
+  yum-epel
+
+GRAPH
+  apache2 (5.0.1)
+  mysql (8.5.1)
+  yum-epel (3.1.0)

@@ -1,0 +1,8 @@
+{
+  "run_list": [
+    "role[web]"
+  ],
+  "automatic": {
+    "ipaddress": "node01"
+  }
+}
