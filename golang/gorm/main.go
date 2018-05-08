@@ -28,4 +28,5 @@ func main() {
 	qq := db.Where("code = ?", 10).Joins("LEFT JOIN (?)", q).Table("hoge").QueryExpr()
 
 	pp.Println(qq)
+
 }
