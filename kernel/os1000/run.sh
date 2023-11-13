@@ -2,8 +2,10 @@
 
 set -xue
 
-QEMU=qemu-system-riscv32
-CC=/usr/local/Cellar/llvm/17.0.4/bin/clang
+# QEMU=qemu-system-riscv32
+QEMU=/opt/homebrew/bin/qemu-system-riscv32
+# CC=/usr/local/Cellar/llvm/17.0.4/bin/clang
+CC=/opt/homebrew/Cellar/llvm/17.0.4/bin/clang
 
 CFLAGS="-std=c11 -O2 -g3 -Wall -Wextra --target=riscv32 -ffreestanding -nostdlib"
 
