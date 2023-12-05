@@ -70,6 +70,9 @@ resource "aws_eks_cluster" "handson" {
 }
 
 # IAM Role
+locals {
+  aws_dns = data.aws_partition.current.dns_suffix
+}
 
 # Assume policy for eks cluster
 data "aws_iam_policy_document" "eks_assume_role_policy" {
