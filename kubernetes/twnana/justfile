@@ -1,0 +1,45 @@
+master_dns := `terraform output -raw master_dns`
+worker_1_dns := `terraform output -raw worker_1_dns`
+worker_2_dns := `terraform output -raw worker_2_dns`
+
+# EC2 Instance ids in which kubernetes in operate
+instance_ids := `terraform output -json worker_instance_ids | from json | append (terraform output -raw master_instance_id) | str join " "` 
+ssh_user := "ubuntu"
+ssh_key := "twnana_key"
+
+zellij_session := env('ZELLIJ_SESSION_NAME')
+
+set shell := ["nu", "-c"]
+
+# Show recipes
+default:
+    @just --list
+
+# Ssh to cluster nodes
+ssh:
+    zellij --session {{ zellij_session }} action new-tab --layout ./ssh.layout.kdl
+
+# Start EC2 instances
+start:
+    aws ec2 start-instances --instance-ids {{ instance_ids }}
+
+# Stop EC2 Instances
+stop:
+    aws ec2 stop-instances --instance-ids {{ instance_ids }}
+
+# Initialize project
+init:
+    terraform init
+
+# Ssh to master node
+[private]
+ssh-master:
+    ssh {{ ssh_user }}@{{ master_dns }} -i ~/.ssh/{{ ssh_key }}
+
+[private]
+ssh-worker-1:
+    ssh {{ ssh_user }}@{{ worker_1_dns }} -i ~/.ssh/{{ ssh_key }}
+
+[private]
+ssh-worker-2:
+    ssh {{ ssh_user }}@{{ worker_2_dns }} -i ~/.ssh/{{ ssh_key }}

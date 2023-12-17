@@ -1,0 +1,23 @@
+layout {
+	pane_template name="ssh" {
+		command "just"
+	}
+
+	pane size=1 borderless=true {
+		plugin location="zellij:tab-bar"
+	}
+	pane split_direction="horizontal" {
+		ssh {
+			args "ssh-master"
+		}
+		ssh {
+			args "ssh-worker-1"
+		}
+		ssh {
+			args "ssh-worker-2"
+		}
+	}
+	pane size=2 borderless=true {
+		plugin location="zellij:status-bar"
+	}
+}
