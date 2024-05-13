@@ -1,6 +1,12 @@
 #![no_std]
 #![no_main]
 
+#[allow(non_upper_case_globals)]
+#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+#[allow(dead_code)]
+mod vmlinux;
+
 use crate::vmlinux::{sock, sock_common};
 
 use aya_ebpf::{macros::kprobe, programs::ProbeContext};
@@ -21,7 +27,8 @@ pub fn kprobeho(ctx: ProbeContext) -> u32 {
 }
 
 fn try_kprobeho(ctx: ProbeContext) -> Result<u32, i64> {
-    let sock: *mut sock = ctx.arg(0).ok_or(1i64)?;
+    let _sock: *mut sock = ctx.arg(0).ok_or(1i64)?;
+    Ok(1)
 }
 
 #[panic_handler]
