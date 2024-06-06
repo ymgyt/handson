@@ -1,0 +1,6 @@
+{
+  "manifest_version": 3,
+  "name": "Hello, WebExtension",
+  "version": "0.1",
+  "description": "Handson extension"
+}
