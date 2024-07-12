@@ -1,0 +1,8 @@
+[package]
+name = "make_public"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+make_public_macro = { path = "../make_public_macro" }
