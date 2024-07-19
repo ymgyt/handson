@@ -1,0 +1,7 @@
+[package]
+name = "oxidize-ebpf"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rbpf = "0.2.0"
