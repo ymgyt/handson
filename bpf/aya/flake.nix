@@ -6,19 +6,29 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = import nixpkgs { inherit system; };
-      in {
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in
+      {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             bpf-linker
             cargo-generate
-            bpftool
+            bpftools
             # for aya-tool
             rust-bindgen
           ];
-          shellHook = "\n            exec nu\n          ";
+          shellHook = "exec nu";
         };
-      });
+      }
+    );
 }
