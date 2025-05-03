@@ -1,0 +1,6 @@
+image:
+    xxd -r -p img.hex out>img.bin
+
+boot1:
+    qemu-system-x86_64 -drive file=img.bin,format=raw
+    
