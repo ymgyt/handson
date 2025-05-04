@@ -5,15 +5,27 @@ use core::fmt::Write as _;
 use core::panic::PanicInfo;
 
 use wasabi::{
+    error,
     graphics::{draw_test_pattern, fill_rect, Bitmap as _},
+    info,
     init::init_basic_runtime,
+    print::hexdump,
+    println,
     qemu::{exit_qemu, QemuExitCode},
     uefi::{init_vram, EfiHandle, EfiMemoryType, EfiSystemTable, VramTextWriter},
+    warn,
     x86::hlt,
 };
 
 #[no_mangle]
 fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
+    println!("Booting WasabiOS...");
+    println!("image_handle: {:#018X}", image_handle);
+    println!("efi_system_table: {:#p}", efi_system_table);
+    info!("info");
+    warn!("warn");
+    error!("error");
+    hexdump(efi_system_table);
     let mut vram = init_vram(efi_system_table).expect("init_vram failed");
     let vw = vram.width();
     let vh = vram.height();
@@ -43,6 +55,7 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
 }
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    error!("PANIC: {info:?}");
     exit_qemu(QemuExitCode::Fail);
 }
