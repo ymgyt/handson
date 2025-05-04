@@ -35,11 +35,7 @@ impl SerialPort {
         write_io_port_u8(self.base, c as u8)
     }
     pub fn send_str(&self, s: &str) {
-        let mut sc = s.chars();
-        let slen = s.chars().count();
-        for _ in 0..slen {
-            self.send_char(sc.next().unwrap());
-        }
+        s.chars().for_each(|c| self.send_char(c))
     }
 }
 impl fmt::Write for SerialPort {
