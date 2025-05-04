@@ -1,16 +1,14 @@
 #![no_std]
 #![no_main]
 
-use core::fmt::Write;
+use core::fmt::Write as _;
 use core::panic::PanicInfo;
 
 use wasabi::{
     graphics::{draw_test_pattern, fill_rect, Bitmap as _},
+    init::init_basic_runtime,
     qemu::{exit_qemu, QemuExitCode},
-    uefi::{
-        exit_from_efi_boot_services, init_vram, EfiHandle, EfiMemoryType, EfiSystemTable,
-        MemoryMapHolder, VramTextWriter,
-    },
+    uefi::{init_vram, EfiHandle, EfiMemoryType, EfiSystemTable, VramTextWriter},
     x86::hlt,
 };
 
@@ -22,14 +20,7 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
     fill_rect(&mut vram, 0x000000, 0, 0, vw, vh).expect("fill_rect failed");
     draw_test_pattern(&mut vram);
     let mut w = VramTextWriter::new(&mut vram);
-    for i in 0..4 {
-        writeln!(w, "i = {i}").unwrap();
-    }
-    let mut memory_map = MemoryMapHolder::new();
-    let status = efi_system_table
-        .boot_services
-        .get_memory_map(&mut memory_map);
-    writeln!(w, "{status:?}").unwrap();
+    let memory_map = init_basic_runtime(image_handle, efi_system_table);
     let mut total_memory_pages = 0;
     for e in memory_map.iter() {
         if e.memory_type != EfiMemoryType::CONVENTIONAL_MEMORY {
@@ -44,7 +35,6 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
         "Total: {total_memory_pages} pages = {total_memory_size_mib} MiB"
     )
     .unwrap();
-    exit_from_efi_boot_services(image_handle, efi_system_table, &mut memory_map);
     writeln!(w, "Hello Non-UEFI world!").unwrap();
 
     loop {
