@@ -8,7 +8,7 @@ use wasabi::{
     error,
     graphics::{draw_test_pattern, fill_rect, Bitmap as _},
     info,
-    init::init_basic_runtime,
+    init::{init_basic_runtime, init_paing},
     print::hexdump,
     println,
     qemu::{exit_qemu, QemuExitCode},
@@ -71,7 +71,8 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
     info!("Exception initialized!");
     trigger_debug_interrupt();
     info!("Execution continued");
-
+    init_paing(&memory_map);
+    info!("Now we are using our own page tables!");
     loop {
         hlt()
     }

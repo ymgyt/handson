@@ -4,8 +4,8 @@ BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x
 Booting WasabiOS...
 image_handle: 0x00000000BEC4E498
 efi_system_table: 0x00000000bf9ee018
-image_base: 0000000000BE341000
-image_size: 000000000000068000
+image_base: 0000000000BE33A000
+image_size: 00000000000006C000
 [INFO]  src/main.rs:33 : info
 [WARN]  src/main.rs:34 : warn
 [ERROR] src/main.rs:35 : error
@@ -17,29 +17,30 @@ image_size: 000000000000068000
 00000050: F0 C0 D1 BE 00 00 00 00 98 EB 9E BF 00 00 00 00 |................|
 00000060: 40 01 ED BF 00 00 00 00                         |@.......|
 cr3 = 0x00000000bfc01000
-[INFO]  src/x86.rs:664: TSS64 created @ 0x13FF7FE80
-[INFO]  src/x86.rs:738: Loading GDT @ 0x000000013FF7FE20
-[INFO]  src/x86.rs:745: Loading TSS ( selector = 0x18 )
-[INFO]  src/x86.rs:611: Loading IDT: IdtrParameters { limit: 4096, base: 0x13ff7ee00 }
+[INFO]  src/x86.rs:742: TSS64 created @ 0x13FF7FE80
+[INFO]  src/x86.rs:816: Loading GDT @ 0x000000013FF7FE20
+[INFO]  src/x86.rs:823: Loading TSS ( selector = 0x18 )
+[INFO]  src/x86.rs:689: Loading IDT: IdtrParameters { limit: 4096, base: 0x13ff7ee00 }
 [INFO]  src/main.rs:71 : Exception initialized!
-[ERROR] src/x86.rs:433: Interrupt Info: 
+[ERROR] src/x86.rs:511: Interrupt Info: 
                 {
-                    rip: 0x00000000BE34EB75, CS: 000008,
-                    rsp: 0x00000000BFEB0850, SS: 000010,
-                    rbp: 0x00000000BFEB0850,
+                    rip: 0x00000000BE3487E5, CS: 000008,
+                    rsp: 0x00000000BFEB0710, SS: 000010,
+                    rbp: 0x00000000BFEB0710,
 
-                    rflags:    0x0000000000000006,
+                    rflags:    0x0000000000000002,
                     error_code: 0x0000000000000000,
 
                     rax: 0x0000000000000000, rcx: 0x0000000000000000,
-                    rdx: 0x00000000BE378818, rbx: 0x00000000BE4FD5C8,
+                    rdx: 0x00000000BE374958, rbx: 0x00000000BE4FB5C8,
                     rsi: 0x00000000BE64A018, rdi: 0x00000000BE64A018,
-                    r8:  0x00000000BFEB05B6,  r9:  0x0000000000000004,
-                    r10: 0x00000000BE37E308, r11: 0x0000000000000001,
+                    r8:  0x00000000BFEB0476,  r9:  0x0000000000000004,
+                    r10: 0x00000000BE37ACC0, r11: 0x0000000000000001,
                     r12: 0x0000000000000000, r13: 0x0000000000000000,
-                    r14: 0x00000000BE4FD518, r15: 0x0000000000000005,
+                    r14: 0x00000000BE4FB518, r15: 0x0000000000000005,
                 }
             
-[ERROR] src/x86.rs:434: Exception 0x03: 
-[ERROR] src/x86.rs:437: Breakpoint
+[ERROR] src/x86.rs:512: Exception 0x03: 
+[ERROR] src/x86.rs:515: Breakpoint
 [INFO]  src/main.rs:73 : Execution continued
+[INFO]  src/main.rs:75 : Now we are using our own page tables!
