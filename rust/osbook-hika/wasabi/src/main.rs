@@ -18,7 +18,7 @@ use wasabi::{
     },
     warn,
     x86::hlt,
-    x86::{init_exceptions, trigger_debug_interrupt},
+    x86::{flush_tlb, init_exceptions, read_cr3, trigger_debug_interrupt, PageAttr},
 };
 
 #[no_mangle]
@@ -73,6 +73,16 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
     info!("Execution continued");
     init_paing(&memory_map);
     info!("Now we are using our own page tables!");
+
+    // Unmap page 0 to detect null ptr dereference
+    let page_table = read_cr3();
+    unsafe {
+        (*page_table)
+            .create_mapping(0, 4096, 0, PageAttr::NotPresent)
+            .expect("Failed to unmap page 0")
+    }
+    flush_tlb();
+
     loop {
         hlt()
     }
