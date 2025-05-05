@@ -16,6 +16,7 @@ pub fn hlt() {
 
 pub fn busy_loop_hint() {
     unsafe { asm!("pause") }
+    // core::hint::spin_loop()
 }
 
 pub fn write_io_port_u8(port: u16, data: u8) {

@@ -6,7 +6,9 @@ use core::panic::PanicInfo;
 
 use wasabi::{
     error,
+    executor::{yield_execution, Executor, Task},
     graphics::{draw_test_pattern, fill_rect, Bitmap as _},
+    hpet::Hpet,
     info,
     init::{init_basic_runtime, init_paing},
     print::hexdump,
@@ -17,7 +19,6 @@ use wasabi::{
         VramTextWriter,
     },
     warn,
-    x86::hlt,
     x86::{flush_tlb, init_exceptions, read_cr3, trigger_debug_interrupt, PageAttr},
 };
 
@@ -40,6 +41,7 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
     fill_rect(&mut vram, 0x000000, 0, 0, vw, vh).expect("fill_rect failed");
     draw_test_pattern(&mut vram);
     let mut w = VramTextWriter::new(&mut vram);
+    let acpi = efi_system_table.acpi_table().expect("ACPI table not found");
     let memory_map = init_basic_runtime(image_handle, efi_system_table);
     let mut total_memory_pages = 0;
     for e in memory_map.iter() {
@@ -83,9 +85,31 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
     }
     flush_tlb();
 
-    loop {
-        hlt()
-    }
+    let hpet = acpi.hpet().expect("Failed to get HPET from ACPI");
+    let hpet = hpet
+        .base_address()
+        .expect("Failed to get HPET base address");
+    info!("HPET is at {hpet:#p}");
+    let hpet = Hpet::new(hpet);
+
+    let task1 = Task::new(async move {
+        for i in 100..=103 {
+            info!("{i} hpet.main_counter = {}", hpet.main_counter());
+            yield_execution().await
+        }
+        Ok(())
+    });
+    let task2 = Task::new(async {
+        for i in 200..=203 {
+            info!("{i}");
+            yield_execution().await
+        }
+        Ok(())
+    });
+    let mut executor = Executor::new();
+    executor.enqueue(task1);
+    executor.enqueue(task2);
+    Executor::run(executor)
 }
 
 #[panic_handler]
