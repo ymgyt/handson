@@ -1,5 +1,6 @@
 use core::fmt;
 
+use crate::result::Result;
 use crate::x86::{busy_loop_hint, read_io_port_u8, write_io_port_u8};
 
 pub struct SerialPort {
@@ -28,6 +29,17 @@ impl SerialPort {
         // IRQs enabled, RTS/DSR set
         write_io_port_u8(self.base + 4, 0x0B);
     }
+    pub fn loopback_test(&self) -> Result<()> {
+        // in loopback mode
+        write_io_port_u8(self.base + 4, 0x1e);
+        self.send_char('T');
+        if self.try_read().ok_or("loopback_test failed: No response")? != b'T' {
+            return Err("loopback_test failed: wrong data recived");
+        }
+        // return to the normal mode
+        write_io_port_u8(self.base + 4, 0x0f);
+        Ok(())
+    }
     pub fn send_char(&self, c: char) {
         while (read_io_port_u8(self.base + 5) & 0x20) == 0 {
             busy_loop_hint();
@@ -36,6 +48,16 @@ impl SerialPort {
     }
     pub fn send_str(&self, s: &str) {
         s.chars().for_each(|c| self.send_char(c))
+    }
+    pub fn try_read(&self) -> Option<u8> {
+        if read_io_port_u8(self.base + 5) & 0x01 == 0 {
+            None
+        } else {
+            let c = read_io_port_u8(self.base);
+            // enable FIFO, clear them, with 14-byte threshold
+            write_io_port_u8(self.base + 2, 0xC7);
+            Some(c)
+        }
     }
 }
 impl fmt::Write for SerialPort {
