@@ -10,6 +10,7 @@ use crate::{
     graphics::{draw_test_pattern, fill_rect, Bitmap as _},
     hpet::{set_global_hpet, Hpet},
     info,
+    pci::Pci,
     uefi::{
         exit_from_efi_boot_services, EfiHandle, EfiMemoryType, EfiSystemTable, MemoryMapHolder,
         VramBufferInfo,
@@ -83,4 +84,16 @@ pub fn init_display(vram: &mut VramBufferInfo) {
     let vh = vram.height();
     fill_rect(vram, 0x000000, 0, 0, vw, vh).expect("fill_rect failed");
     draw_test_pattern(vram);
+}
+
+pub fn init_pci(acpi: &AcpiRsdpStruct) {
+    if let Some(mcfg) = acpi.mcfg() {
+        for i in 0..mcfg.num_of_entries() {
+            if let Some(e) = mcfg.entry(i) {
+                info!("{}", e);
+            }
+        }
+        let pci = Pci::new(mcfg);
+        pci.probe_devices();
+    }
 }

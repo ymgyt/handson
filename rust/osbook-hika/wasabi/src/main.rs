@@ -9,7 +9,7 @@ use wasabi::{
     executor::{Executor, Task, TimeoutFuture},
     hpet::global_timestamp,
     info,
-    init::{init_allocator, init_basic_runtime, init_display, init_hpet, init_paing},
+    init::{init_allocator, init_basic_runtime, init_display, init_hpet, init_paing, init_pci},
     print::{hexdump, set_global_vram},
     println,
     qemu::{exit_qemu, QemuExitCode},
@@ -42,6 +42,7 @@ fn efi_main(image_handle: EfiHandle, efi_system_table: &EfiSystemTable) {
     let (_gdt, _idt) = init_exceptions();
     init_paing(&memory_map);
     init_hpet(acpi);
+    init_pci(acpi);
 
     let t0 = global_timestamp();
     let serial_task = Task::new(async {
