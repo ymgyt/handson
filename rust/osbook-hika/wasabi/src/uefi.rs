@@ -1,10 +1,6 @@
 use crate::result::Result;
-use crate::{
-    acpi::AcpiRsdpStruct,
-    graphics::{draw_font_fg, Bitmap},
-};
+use crate::{acpi::AcpiRsdpStruct, graphics::Bitmap};
 use core::{
-    fmt,
     mem::{offset_of, size_of},
     ptr::null_mut,
 };
@@ -304,37 +300,6 @@ pub fn init_vram(efi_system_table: &EfiSystemTable) -> Result<VramBufferInfo> {
         height: gp.mode.info.vertical_resolution as i64,
         pixels_per_line: gp.mode.info.pixels_per_scan_line as i64,
     })
-}
-
-pub struct VramTextWriter<'a> {
-    vram: &'a mut VramBufferInfo,
-    cursor_x: i64,
-    cursor_y: i64,
-}
-
-impl<'a> VramTextWriter<'a> {
-    pub fn new(vram: &'a mut VramBufferInfo) -> Self {
-        Self {
-            vram,
-            cursor_x: 0,
-            cursor_y: 0,
-        }
-    }
-}
-
-impl fmt::Write for VramTextWriter<'_> {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        for c in s.chars() {
-            if c == '\n' {
-                self.cursor_y += 16;
-                self.cursor_x = 0;
-                continue;
-            }
-            draw_font_fg(self.vram, self.cursor_x, self.cursor_y, 0xffffff, c);
-            self.cursor_x += 8;
-        }
-        Ok(())
-    }
 }
 
 pub fn exit_from_efi_boot_services(

@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use crate::{info, result::Result, x86::busy_loop_hint};
+use crate::{hpet::global_timestamp, info, result::Result, x86::busy_loop_hint};
 use core::{
     fmt,
     future::Future,
@@ -9,6 +9,7 @@ use core::{
     ptr::null,
     sync::atomic::AtomicBool,
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    time::Duration,
 };
 
 use alloc::{boxed::Box, collections::VecDeque};
@@ -129,4 +130,27 @@ impl Future for Yield {
 
 pub async fn yield_execution() {
     Yield::default().await
+}
+
+pub struct TimeoutFuture {
+    timeout: Duration,
+}
+impl TimeoutFuture {
+    pub fn new(duration: Duration) -> Self {
+        Self {
+            timeout: global_timestamp() + duration,
+        }
+    }
+}
+
+impl Future for TimeoutFuture {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if self.timeout < global_timestamp() {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    }
 }
