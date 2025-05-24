@@ -3,6 +3,7 @@
 #![feature(custom_test_frameworks)]
 #![feature(sync_unsafe_cell)]
 #![feature(const_caller_location)]
+#![feature(option_get_or_insert_default)]
 #![feature(const_location_fields)]
 #![test_runner(crate::test_runner::test_runner)]
 #![reexport_test_harness_main = "run_unit_tests"]
