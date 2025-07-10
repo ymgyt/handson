@@ -6,7 +6,7 @@ use core::{
     arch::{asm, global_asm},
     fmt,
     marker::PhantomData,
-    mem::{offset_of, size_of, size_of_val, MaybeUninit},
+    mem::{offset_of, size_of, size_of_val, ManuallyDrop, MaybeUninit},
     pin::Pin,
 };
 
@@ -61,7 +61,7 @@ const ATTR_CAHE_DISABLE: u64 = 1 << 4;
 pub enum PageAttr {
     NotPresent = 0,
     ReadWriteKernel = ATTR_PRESENT | ATTR_WRITABLE,
-    REadWriteIo = ATTR_PRESENT | ATTR_WRITABLE | ATTR_WRITE_THROUGH | ATTR_CAHE_DISABLE,
+    ReadWriteIo = ATTR_PRESENT | ATTR_WRITABLE | ATTR_WRITE_THROUGH | ATTR_CAHE_DISABLE,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -72,12 +72,12 @@ pub enum TranslationResult {
 }
 
 #[repr(transparent)]
-pub struct Entry<const LEVEL: usize, const SHIFT: usize, NEXT> {
+pub struct Entry<const LEVEL: usize, NEXT> {
     value: u64,
     next_type: PhantomData<NEXT>,
 }
 
-impl<const LEVEL: usize, const SHIFT: usize, NEXT> Entry<LEVEL, SHIFT, NEXT> {
+impl<const LEVEL: usize, NEXT> Entry<LEVEL, NEXT> {
     fn read_value(&self) -> u64 {
         self.value
     }
@@ -142,24 +142,24 @@ impl<const LEVEL: usize, const SHIFT: usize, NEXT> Entry<LEVEL, SHIFT, NEXT> {
         }
     }
 }
-impl<const LEVEL: usize, const SHIFT: usize, NEXT> fmt::Display for Entry<LEVEL, SHIFT, NEXT> {
+impl<const LEVEL: usize, NEXT> fmt::Display for Entry<LEVEL, NEXT> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.format(f)
     }
 }
 
-impl<const LEVEL: usize, const SHIFT: usize, NEXT> fmt::Debug for Entry<LEVEL, SHIFT, NEXT> {
+impl<const LEVEL: usize, NEXT> fmt::Debug for Entry<LEVEL, NEXT> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.format(f)
     }
 }
 
 #[repr(align(4096))]
-pub struct Table<const LEVEL: usize, const SHIFT: usize, NEXT> {
-    entry: [Entry<LEVEL, SHIFT, NEXT>; 512],
+pub struct Table<const LEVEL: usize, NEXT> {
+    entry: [Entry<LEVEL, NEXT>; 512],
 }
 
-impl<const LEVEL: usize, const SHIFT: usize, NEXT: core::fmt::Debug> Table<LEVEL, SHIFT, NEXT> {
+impl<const LEVEL: usize, NEXT: core::fmt::Debug> Table<LEVEL, NEXT> {
     fn format(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "L{}Table @ {:#p} {{", LEVEL, self)?;
         for i in 0..512 {
@@ -171,25 +171,26 @@ impl<const LEVEL: usize, const SHIFT: usize, NEXT: core::fmt::Debug> Table<LEVEL
         }
         writeln!(f, "}}")
     }
+    fn index_shift() -> usize {
+        (LEVEL - 1) * 9 + 12
+    }
     pub fn next_level(&self, index: usize) -> Option<&NEXT> {
         self.entry.get(index).and_then(|e| e.table().ok())
     }
     fn calc_index(&self, addr: u64) -> usize {
-        ((addr >> SHIFT) & 0b1_1111_1111) as usize
+        ((addr >> Self::index_shift()) & 0b1_1111_1111) as usize
     }
 }
-impl<const LEVEL: usize, const SHIFT: usize, NEXT: core::fmt::Debug> fmt::Debug
-    for Table<LEVEL, SHIFT, NEXT>
-{
+impl<const LEVEL: usize, NEXT: core::fmt::Debug> fmt::Debug for Table<LEVEL, NEXT> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.format(f)
     }
 }
 
-pub type PT = Table<1, 12, [u8; PAGE_SIZE]>;
-pub type PD = Table<2, 21, PT>;
-pub type PDPT = Table<3, 30, PD>;
-pub type PML4 = Table<4, 39, PDPT>;
+pub type PT = Table<1, [u8; PAGE_SIZE]>;
+pub type PD = Table<2, PT>;
+pub type PDPT = Table<3, PD>;
+pub type PML4 = Table<4, PDPT>;
 
 impl PML4 {
     pub fn new() -> Box<Self> {
@@ -206,28 +207,38 @@ impl PML4 {
         phys: u64,
         attr: PageAttr,
     ) -> Result<()> {
-        if virt_start & ATTR_MASK != 0 {
-            return Err("Invalid virt_start");
-        }
-        if virt_end & ATTR_MASK != 0 {
-            return Err("Invalid virt_end");
-        }
-        if phys & ATTR_MASK != 0 {
-            return Err("Invalid phys");
-        }
-        for addr in (virt_start..virt_end).step_by(PAGE_SIZE) {
-            let index = self.calc_index(addr);
-            // 3(PDPT)
-            let table = self.entry[index].ensure_populated()?.table_mut()?;
+        let table = self;
+        let mut addr = virt_start;
+        loop {
             let index = table.calc_index(addr);
-            // 2(PD)
             let table = table.entry[index].ensure_populated()?.table_mut()?;
-            let index = table.calc_index(addr);
-            // 1(PT)
-            let table = table.entry[index].ensure_populated()?.table_mut()?;
-            let index = table.calc_index(addr);
-            let pte = &mut table.entry[index];
-            pte.set_page(phys + addr - virt_start, attr)?;
+            loop {
+                let index = table.calc_index(addr);
+                let table = table.entry[index].ensure_populated()?.table_mut()?;
+                loop {
+                    let index = table.calc_index(addr);
+                    let table = table.entry[index].ensure_populated()?.table_mut()?;
+                    loop {
+                        let index = table.calc_index(addr);
+                        let pte = &mut table.entry[index];
+                        let phys_addr = phys + addr - virt_start;
+                        pte.set_page(phys_addr, attr)?;
+                        addr = addr.wrapping_add(PAGE_SIZE as u64);
+                        if index + 1 >= (1 << 9) || addr >= virt_end {
+                            break;
+                        }
+                    }
+                    if index + 1 >= (1 << 9) || addr >= virt_end {
+                        break;
+                    }
+                }
+                if index + 1 >= (1 << 9) || addr >= virt_end {
+                    break;
+                }
+            }
+            if index + 1 >= (1 << 9) || addr >= virt_end {
+                break;
+            }
         }
         Ok(())
     }
@@ -897,4 +908,27 @@ const _: () = assert!(size_of::<TaskStateSegment64Descriptor>() == 16);
 
 pub fn trigger_debug_interrupt() {
     unsafe { asm!("int3") }
+}
+
+/// # Safety
+/// ...
+pub unsafe fn take_current_page_table() -> ManuallyDrop<Box<PML4>> {
+    ManuallyDrop::new(Box::from_raw(read_cr3()))
+}
+
+/// # Safety
+/// ...
+pub unsafe fn put_current_page_table(mut table: ManuallyDrop<Box<PML4>>) {
+    write_cr3(Box::into_raw(ManuallyDrop::take(&mut table)))
+}
+
+/// # Safety
+/// ...
+pub unsafe fn with_current_page_table<F>(callback: F)
+where
+    F: FnOnce(&mut PML4),
+{
+    let mut table = take_current_page_table();
+    callback(&mut table);
+    put_current_page_table(table)
 }
