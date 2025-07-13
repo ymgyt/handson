@@ -39,7 +39,7 @@
             echo "bpf   headers - ${pkgs.libbpf}/include"
 
             # Set header paths for BPF compilation
-            export C_INCLUDE_PATH="${pkgs.linuxHeaders}/include:${pkgs.libbpf}/include"
+            export C_INCLUDE_PATH="$PWD/include:${pkgs.linuxHeaders}/include:${pkgs.libbpf}/include"
           '';
         };
       }
